@@ -1,5 +1,8 @@
-use core::fmt;
+use crate::error::EzyErr;
 use std::{collections::HashMap, path::Path};
+pub mod error;
+mod parser;
+
 
 pub enum EzyValue {
     SignedInteger8(i8),
@@ -15,32 +18,7 @@ pub enum EzyValue {
     Float32(f32),
     Float64(f64),
     Bool(bool),
-}
-#[derive(Debug)]
-pub enum EzyErr {
-    TypeMismatch(String),
-    ValueNotFound(String),
-}
-impl fmt::Display for EzyErr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            EzyErr::TypeMismatch(s) => write!(f, "Type mismatch: {}", s),
-            EzyErr::ValueNotFound(s) => write!(f, "Value not found: {}", s),
-        }
-    }
-}
-
-impl std::error::Error for EzyErr {
-    fn description(&self) -> &str {
-        match self {
-            EzyErr::TypeMismatch(_) => "Type mismatch error",
-            EzyErr::ValueNotFound(_) => "Value not found error",
-        }
-    }
-}
-
-pub fn parse_ezy(path: &Path) -> EzyKeyValuePair {
-    unimplemented!("parse_ezy");
+    String(String),
 }
 
 pub struct EzyKeyValuePair {
@@ -183,6 +161,15 @@ impl EzyKeyValuePair {
             EzyValue::Bool(value) => Ok(value),
             _ => Err(EzyErr::TypeMismatch(format!(
                 "Expected bool for key '{}'",
+                key
+            ))),
+        }
+    }
+    pub fn get_string(&self, key: &str) -> Result<&str, EzyErr> {
+        match self.get_value(key)? {
+            EzyValue::String(value) => Ok(value),
+            _ => Err(EzyErr::TypeMismatch(format!(
+                "Expected String for key {}",
                 key
             ))),
         }
