@@ -2,7 +2,7 @@ use crate::error::EzyErr;
 use std::{collections::HashMap, path::Path};
 pub mod error;
 mod parser;
-
+mod builder;
 
 pub enum EzyValue {
     SignedInteger8(i8),
@@ -23,14 +23,10 @@ pub enum EzyValue {
 
 pub struct EzyKeyValuePair {
     pairs: HashMap<String, EzyValue>,
-    version: String,
     last_updated: i64,
 }
 
 impl EzyKeyValuePair {
-    pub fn get_version(&self) -> &str {
-        &self.version
-    }
 
     pub fn get_value(&self, key: &str) -> Result<&EzyValue, EzyErr> {
         match self.pairs.get(key) {

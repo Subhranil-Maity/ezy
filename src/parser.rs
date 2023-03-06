@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::{path::Path, fs::File};
-use std::io::{Error, Read};
+use std::io::Read;
 
+use crate::builder::EzyKeyValuePairBuilder;
+use crate::error::EzyErr;
 use crate::{EzyKeyValuePair, EzyValue};
 
 
@@ -19,29 +21,41 @@ const FLOAT_32: u8 = 0x0B;
 const FLOAT_64: u8 = 0x0C;
 const BOOL: u8 = 0x0D;
 const STRING: u8 = 0x0E;
+const LAST_UPDATED: u8 = 0x0F;
+
+fn is_consicutive_nulls(s: &mut u8) -> bool {
+    if *s == 2 {
+        *s = 0;
+        return true;
+    }else {
+        *s += 1;
+        return false;
+    }
+}
 
 
-pub fn parse_from_file(path: &Path) -> Result<EzyKeyValuePair, Error> {
-    let file = File::open(path)?;
+pub fn parse_from_file(path: &Path) -> Result<EzyKeyValuePair, EzyErr> {
+    let file;
+    match File::open(path){
+        Ok(value) => file = value,
+        Err(err) => return Err(EzyErr::IoError(err))
+    }
     let mut buffer = Vec::new();
-    let mut pair = HashMap::<String, EzyValue>::new();
+    let mut builder = EzyKeyValuePairBuilder::new();
+    let mut null_byte_count: u8 = 0;
     for result_byte in file.bytes() {
         match result_byte {
             Ok(byte) => {
-                if byte == 0 {
-                    parse_ezy(&mut buffer, &mut pair);
+                if is_consicutive_nulls(&mut null_byte_count) {
+                    builder.parse(&mut buffer);
                 }
                 else {
                     buffer.push(byte);
                 }
             },
-            Err(err) => return Err(err),
+            Err(err) => return Err(EzyErr::IoError(err)),
         }
     }
-    Ok(EzyKeyValuePair { pairs: pair, version: String::from(""), last_updated: 111 })
-}
-
-fn parse_ezy(buffer: &mut Vec<u8>, pair: &mut HashMap<String, EzyValue>) {
-    
+    Ok(builder.build())
 }
 
